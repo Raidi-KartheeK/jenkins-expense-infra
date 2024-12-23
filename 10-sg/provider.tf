@@ -10,7 +10,7 @@ terraform {
     bucket = "aws-remote-state-dev"
     key    = "expense-sg-dev"
     region = "us-east-1"
-    dynamodb_table = "aws-locking"
+    dynamodb_table = "aws-locking-dev"
   }
 }
 
