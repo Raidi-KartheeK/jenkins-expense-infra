@@ -7,17 +7,14 @@ pipeline {
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
-    // environment {
-    //     DEBUG = 'true'
-    // }
-
+  
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
     }
     stages {
         stage('Init and Plan') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                withAWS(region: 'us-east-1', credentials: 'aws-cred') {
                     sh """
                         cd 80-cdn
                         terraform init -reconfigure
@@ -33,19 +30,22 @@ pipeline {
                 ok "Yes, we should."
             } */
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
+                withAWS(region: 'us-east-1', credentials: 'aws-cred') {
                     sh """
                         cd 80-cdn
                         if [ ${params.ACTION} == 'apply' ]
                         then
                             terraform apply -auto-approve tfplan
+                        elif [ ${params.ACTION} == 'destroy' ]
+                        then
+                            terraform destroy -auto-approve
                         fi
                     """
                 }
             }
         }
-
-        /* stage('Destroy') {
+    }
+    /* stage('Destroy') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
@@ -120,7 +120,6 @@ pipeline {
         } */
         
     }
-
     post {
         always{
             echo "This sections runs always"
