@@ -1,4 +1,4 @@
-Expense DEV Infrastructure
+**Expense DEV Infrastructure**
 
 ![expense-infra](https://github.com/user-attachments/assets/451b4dcc-5031-4a37-a944-8776867fa619)
 
@@ -15,10 +15,10 @@ We are using bastion as our EKS client, so it will have
    .  helm
    .  aws configure
 
-RDS Configuration
+**RDS Configuration**
 
 Since we are using RDS instead of MySQL image, we need to configure RDS manually, we are creating schema as part of RDS but table and user should be created.
 
 Make sure MySQL instance allows port no 3306 from bastion
 
-mysql -h expense-dev.czn6yzxlcsiv.us-east-1.rds.amazonaws.com -u root -pExpenseApp1
+**mysql -h expense-dev.czn6yzxlcsiv.us-east-1.rds.amazonaws.com -u root -pExpenseApp1**
