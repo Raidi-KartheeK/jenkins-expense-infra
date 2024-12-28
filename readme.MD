@@ -14,3 +14,11 @@ We are using bastion as our EKS client, so it will have
    .  kubectl
    .  helm
    .  aws configure
+
+RDS Configuration
+
+Since we are using RDS instead of MySQL image, we need to configure RDS manually, we are creating schema as part of RDS but table and user should be created.
+
+Make sure MySQL instance allows port no 3306 from bastion
+
+mysql -h expense-dev.czn6yzxlcsiv.us-east-1.rds.amazonaws.com -u root -pExpenseApp1
