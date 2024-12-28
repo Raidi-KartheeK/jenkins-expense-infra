@@ -45,7 +45,7 @@ pipeline {
             }
         }
     }
-    /* stage('Destroy') {
+    /* stage('Parallel-1') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
