@@ -22,7 +22,7 @@ pipeline {
                 }
             }
         }
-    }
+    
         stage('Apply or Destroy') { 
             // input {
             //     message "Should we continue to ${params.ACTION}"
@@ -51,6 +51,7 @@ pipeline {
                 build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: false
          }
     }
+}  
         
 post {
     always{
@@ -64,4 +65,5 @@ post {
         echo 'This section runs when pipline failure'
     }
 }
+
 }
