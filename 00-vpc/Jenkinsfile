@@ -48,7 +48,7 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             steps{
-                build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: false
+                build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: true
          }
     }
 }  
