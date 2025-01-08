@@ -43,15 +43,15 @@ pipeline {
                 }
             }
         }
-        stage('Trigger sg') {
+        stage ('Trigger SG') {
             when {
                 expression { params.ACTION == 'apply' }
             }
             steps{
-                build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: false
-         }
-    }
-}  
+                build job: '10-sg', parameters: [string(name: 'ACTION', value: "apply")] 
+            }
+        }
+    }  
         
 post {
     always{
@@ -64,5 +64,5 @@ post {
     failure{
         echo 'This section runs when pipline failure'
     }
-  }
-}
+   }
+ } 
