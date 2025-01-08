@@ -43,13 +43,13 @@ pipeline {
                 }
             }
         }
-        stage('Trigger sg') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
-            steps{
-                build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: true
-         }
+        // stage('Trigger sg') {
+        //     when {
+        //         expression { params.ACTION == 'apply' }
+        //     }
+        //     steps{
+        //         build job: '10-sg', parameters: [string (name: 'Action',value: 'apply')], wait: false
+        //  }
     }
 }  
         
