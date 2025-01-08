@@ -32,10 +32,10 @@ pipeline {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh """
                         cd 00-vpc
-                        if [ ${parms.Action} == 'Apply' ]
+                        if [ ${parms.Action} == 'APPLY' ]
                         then
                             terraform apply -auto-approve tfplan
-                        elif [ ${parms.ACTION} == 'Destroy']
+                        elif [ ${parms.ACTION} == 'DESTROY']
                         then
                             terraform destroy -auto-approve
                         fi
@@ -45,10 +45,12 @@ pipeline {
         }
         stage ('Trigger SG') {
             when {
-                expression { params.ACTION == 'apply' }
+                expression { params.ACTION == 'APPLY' }
             }
             steps{
-                build job: '10-sg', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                build job: '10-sg', 
+                parameters: [string(name: 'ACTION', value: "APPLY")],
+                wait: false
             }
         }
     }  
@@ -64,5 +66,5 @@ post {
     failure{
         echo 'This section runs when pipline failure'
     }
-   }
- } 
+  }
+}
