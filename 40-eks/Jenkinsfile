@@ -19,7 +19,7 @@ pipeline {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh """
-                        cd 40-eks
+                        cd 20-eks
                         terraform init -reconfigure
                         terraform plan -out=tfplan
                     """
