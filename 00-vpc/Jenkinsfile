@@ -50,7 +50,9 @@ pipeline {
             steps{
                 build job: '10-sg', 
                 parameters: [string(name: 'ACTION', value: "APPLY")],
-                wait: false
+                wait: false 
+                // wait false means if sg fails vpc will run
+                // wait true means if sg fails vpc also fails
             }
         }
     }  
