@@ -1,135 +1,102 @@
 pipeline {
-    agent {
-        label 'AGENT-1'
-    }
-    options{
+    agent { label 'AGENT-1' }
+    options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
-  
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
+        choice(name: 'Action', choices: ['apply', 'destroy'], description: 'Select the action')
+    }
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_CREDENTIALS = 'aws-credentials'
+        EXPENSE_DIR = '80-cdn'
     }
     stages {
         stage('Init and Plan') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 80-cdn
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS) {
+                        sh """
+                            cd ${EXPENSE_DIR}
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        """
+                    }
                 }
             }
         }
 
-        stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
+        stage('Apply/Destroy') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-cred') {
-                    sh """
-                        cd 80-cdn
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
-                            terraform destroy -auto-approve
-                        fi
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS) {
+                        def action = params.Action == 'apply' ? "apply" : "destroy -auto-approve"
+                        sh "cd ${EXPENSE_DIR} && terraform ${action} ${action == 'apply' ? 'tfplan' : ''}"
+                    }
                 }
             }
         }
-    }
-    /* stage('Parallel-1') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            parallel {
-                stage('ECR') {
-                    steps {
-                        build job: '70-ecr', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-                    }
-                }
-                stage('ALB') {
-                    steps {
-                        build job: '60-alb', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-                    }
-                }
-                stage('EKS') {
-                    steps {
-                        build job: '40-eks', parameters: [string(name: 'ACTION', value: "destroy")], wait: true
-                    }
-                }
-                stage('Bastion') {
-                    steps {
-                        build job: '20-bastion', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-                    }
-                }
 
-            }
-        } */
-        stage('Destroy'){
+        stage('Destroy') {
             when {
-                expression { params.ACTION == 'destroy' }
+                expression { params.Action == 'destroy' }
             }
-            steps{
-                withAWS(region: 'us-east-1', credentials: 'aws-creds') {
-                    script {
+            steps {
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS) {
                         def directories = ['80-cdn', '70-ecr', '60-alb', '50-acm', '40-eks', '30-rds', '20-bastion', '10-sg', '00-vpc']
-                        for (dir in directories) {
+                        directories.each { dir ->
                             echo "Destroying resources in directory: ${dir}"
                             sh """
-                            cd ${dir}
-                            terraform init -reconfigure
-                            terraform destroy -auto-approve || { echo "Failed to destroy resources in ${dir}"; exit 1; }
-                            cd ..
+                                cd ${dir}
+                                terraform init -reconfigure
+                                terraform destroy -auto-approve || { echo "Failed to destroy resources in ${dir}"; exit 1; }
                             """
                         }
-            }
+                    }
                 }
             }
         }
-        /* stage('Sequential') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            stages {
-                
-                stage('ACM') {
-                    steps {
-                        build job: '50-acm', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-                    }
-                }
-                stage('SG-Destroy'){
-                    steps {
-                        build job: '10-sg', parameters: [string(name: 'ACTION', value: "destroy")], wait: true
-                    }
-                }
-                stage('VPC-Destroy'){
-                    steps {
-                        build job: '00-vpc', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-                    }
-                }
-            }
-                
-        } */
-        
     }
+
     post {
-        always{
-            echo "This sections runs always"
+        always {
+            echo 'This section runs always'
             deleteDir()
         }
-        success{
-            echo "This section run when pipeline success"
+        success {
+            echo 'This section runs when the pipeline succeeds'
         }
-        failure{
-            echo "This section run when pipeline failure"
+        failure {
+            echo 'This section runs when the pipeline fails'
         }
     }
 }
+
+
+ // sh """
+ //     cd EXPENSE_DIR
+ //     if [ ${params.Action} == 'APPLY']
+ //     then
+ //         terraform apply -auto-approve tfplan
+ //     elif [ ${params.Action} == 'DESTROY']
+ //     then
+ //         terraform destroy -auto-approve
+ //     fi
+ // """ 
+ 
+ 
+ // stage ('Trigger SG') {
+        //     when {
+        //         expression { params.Action == 'apply' }
+        //     }
+        //     steps{
+        //         build job: '10-sg', 
+        //         parameters: [string(name: 'Action', value: params.Action)],
+        //         wait: false 
+        //         // Ensures that if SG fails, VPC does not fail
+        //         // wait true means if sg fails vpc also fails
+        //     }
+        // }
