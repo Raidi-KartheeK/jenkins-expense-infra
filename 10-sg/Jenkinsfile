@@ -10,7 +10,7 @@ pipeline {
     }
     environment {
         AWS_REGION = 'us-east-1'
-        AWS_CREDENTIALS = 'terraform-aws-credentials'
+        AWS_CREDENTIALS = 'aws-credentials'
         EXPENSE_DIR = '20-sg'
     }
     stages {

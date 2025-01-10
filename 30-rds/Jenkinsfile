@@ -1,64 +1,83 @@
 pipeline {
-    agent {
-        label 'AGENT-1'
-    }
+    agent { label 'AGENT-1' }
     options{
-        timeout(time: 30, unit: 'MINUTES')
-        disableConcurrentBuilds()
+        timeout(time: 30,unit: 'MINUTES')
+        disableConcurrentBuilds ()
         ansiColor('xterm')
     }
-    // environment {
-    //     DEBUG = 'true'
-    // }
-
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
+        choice(name: 'Action', choices: ['apply', 'destroy'], description: 'Select the action ')
+    }
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_CREDENTIALS = 'aws-credentials'
+        EXPENSE_DIR = '30-rds'
     }
     stages {
-        stage('Init and Plan') {
+        stage('Init and Plan') { 
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 30-rds
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS ) {
+                        sh """
+                            cd ${EXPENSE_DIR}
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        """
+                    }
                 }
             }
         }
-
-        stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
+        stage('Apply/Destroy') { 
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 30-rds
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
-                            terraform destroy -auto-approve
-                        fi
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS ) {
+                        
+                            def action = params.Action == 'apply' ? "apply" : "destroy -auto-approve"
+                            sh "cd ${EXPENSE_DIR} && terraform ${action} ${action == 'apply' ? 'tfplan' : ''}"      
+                                                   
+                    }
                 }
             }
-        }
-    }
+        }       
        
-    post {
-        always{
-            echo "This sections runs always"
-            deleteDir()
-        }
-        success{
-            echo "This section run when pipeline success"
-        }
-        failure{
-            echo "This section run when pipeline failure"
+    }  
+        
+post {
+    always{
+        echo 'This sections runs always'
+        deleteDir() 
+    }
+    success{
+        echo 'This section runs when pipeline success'
+    }
+    failure{
+        echo 'This section runs when pipline failure'
         }
     }
 }
+
+
+ // sh """
+ //     cd EXPENSE_DIR
+ //     if [ ${params.Action} == 'APPLY']
+ //     then
+ //         terraform apply -auto-approve tfplan
+ //     elif [ ${params.Action} == 'DESTROY']
+ //     then
+ //         terraform destroy -auto-approve
+ //     fi
+ // """ 
+ 
+ 
+ // stage ('Trigger SG') {
+        //     when {
+        //         expression { params.Action == 'apply' }
+        //     }
+        //     steps{
+        //         build job: '10-sg', 
+        //         parameters: [string(name: 'Action', value: params.Action)],
+        //         wait: false 
+        //         // Ensures that if SG fails, VPC does not fail
+        //         // wait true means if sg fails vpc also fails
+        //     }
+        // }
