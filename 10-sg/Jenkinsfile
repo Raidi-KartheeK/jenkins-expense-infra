@@ -1,138 +1,64 @@
 pipeline {
-    agent {
-        label 'AGENT-1'
-    }
-    options{
-        timeout(time: 30, unit: 'MINUTES')
+    agent { label "Agent-1" }
+    options {
+        timeout(time: 20, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
-    // environment {
-    //     DEBUG = 'true'
-    // }
-
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
+        choice(name: 'Action', choices: ['apply', 'destroy'], description: 'Select the action ')
+    }
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_CREDENTIALS = 'terraform-aws-credentials'
+        EXPENSE_DIR = '20-sg'
     }
     stages {
         stage('Init and Plan') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 10-sg
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS) {
+                        sh """
+                            cd ${EXPENSE_DIR}
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        """
+                    }
                 }
             }
         }
-
-        stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
+        stage('Apply/Destroy') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 10-sg
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
-                            terraform destroy -auto-approve
-                        fi
-                    """
+                script {
+                    withAWS(region: AWS_REGION, credentials: AWS_CREDENTIALS) {
+                        def action = params.Action == 'apply' ? "apply" : "destroy -auto-approve"
+                        sh "cd ${EXPENSE_DIR} && terraform ${action} ${action == 'apply' ? 'tfplan' : ''}"
+                    }
                 }
             }
         }
-        stage ('Destroy vpc') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps{
-                build job: '00-vpc', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
+        stage('Parallel -1') {
+            when { expression { params.Action == 'apply' } }
+            steps {
+                script {
+                    def directories = ['20-bastion', '30-rds', '40-eks', '50-acm', '60-alb', '70-ecr', '80-cdn']
+                    directories.each { directory ->
+                        build job: "${directory}/Jenkinsfile", parameters: [choice(name: 'Action', value: params.Action)]
+                    }
+                }
             }
         }
-        stage('Parallel') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
-           parallel {
-               stage('Bastion') {
-                  steps {
-                       build job: '20-bastion', parameters: [string(name: 'ACTION', value: "apply")], wait: false 
-                        }
-                    }
-                    //  stage('RDS') {
-                    //     steps {
-                    //         build job: '30-rds', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                    //     }
-                    }
-                    stage('EKS') {
-                        steps {
-                            build job: '40-eks', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                      stage('Acm') {
-                        steps {
-                            build job: '50-acm', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                      stage('Alb') {
-                        steps {
-                          build job: '60-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                      stage('ECR') {
-                        steps {
-                        build job: '70-ecr', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                    //   stage('Alb') {
-                    //     steps {
-                    //     build job: '60-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                    //     }
-                    //  }
-                    
-                 }
-            }
-                    stage('Sequential') {
-            when {
-                expression { params.ACTION == 'destory' }
-            }
-           stages {
-                stage('ACM') {
-                    steps {
-                        build job: '50-acm', parameters: [string(name: 'ACTION', value: "apply")]
-                        }
-                stage('Alb') {
-                    steps {
-                        build job: '60-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                stage('CDN') {
-                    steps {
-                        build job: '80-CDN', parameters: [string(name: 'ACTION', value: "apply")], wait: false
-                        }
-                    }
-                                 
-                 }
-            }
     }
-
     post {
-        always{
-            echo "This sections runs always"
+        always {
+            echo "Cleaning up the workspace"
             deleteDir()
         }
-        success{
-            echo "This section run when pipeline success"
+        success {
+            echo "Pipeline completed successfully"
         }
-        failure{
-            echo "This section run when pipeline failure"
+        failure {
+            echo "Run when pipeline failure"
         }
     }
-  }
 }
