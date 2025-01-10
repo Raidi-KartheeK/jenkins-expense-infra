@@ -11,7 +11,7 @@ pipeline {
     environment {
         AWS_REGION = 'us-east-1'
         AWS_CREDENTIALS = 'aws-credentials'
-        EXPENSE_DIR = '20-sg'
+        EXPENSE_DIR = '10-sg'
     }
     stages {
         stage('Init and Plan') {
