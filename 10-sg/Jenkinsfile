@@ -43,7 +43,8 @@ pipeline {
                 script {
                     def directories = ['20-bastion', '30-rds', '40-eks', '50-acm', '60-alb', '70-ecr', '80-cdn']
                     directories.each { directory ->
-                        build job: "${directory}/Jenkinsfile", parameters: [string(name: 'Action', value: params.Action)]
+                        build job: directory, parameters: [string(name: 'Action', value: params.Action)]
+
                     }
                 }
             }
