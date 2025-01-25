@@ -1,3 +1,8 @@
+data "aws_ssm_parameter" "eks_public_key" {
+  name            = "/key-pair/eks-public-key"  # Replace with the actual SSM parameter name
+  with_decryption = true                      # Enable decryption for SecureString parameters
+}
+
 data "aws_ssm_parameter" "eks_control_plane_sg_id" {
   #/expense/dev/bastion_sg_id
   name = "/${var.project_name}/${var.enivronment}/eks_control_plane_sg_id"
