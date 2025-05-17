@@ -68,7 +68,6 @@ post {
  //     fi
  // """ 
  
- 
  // stage ('Trigger SG') {
         //     when {
         //         expression { params.Action == 'apply' }
