@@ -24,4 +24,3 @@ resource "aws_ssm_parameter" "database_subnet_group_name" {
   type  = "String"
   value = module.vpc.database_subnet_group_name
 }
-
